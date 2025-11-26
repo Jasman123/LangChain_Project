@@ -5,8 +5,6 @@ from langgraph.graph import StateGraph, START, END, MessagesState
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, RemoveMessage
 from typing import Literal
 from IPython.display import Image, display
-from langgraph.checkpoint.memory import MemorySaver
-
 
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
@@ -23,42 +21,40 @@ class State(MessagesState):
     pass
 
 
-def call_model(state: State):
-    response = chat.invoke(state["messages"])
-    return {"messages": state["messages"] + [response]}
+def chat_model(state: State) -> State:
+    response = chat.invoke(state['messages'])
+    return {"messages": state['messages'] + [response]}
+
 
 builder = StateGraph(State)
-builder.add_node("model", call_model)
+builder.add_node("chat_model", chat_model)
 
-builder.add_edge(START, "model")
-builder.add_edge("model", END)
+builder.add_edge(START, "chat_model")
+builder.add_edge("chat_model", END)
 
 graph = builder.compile()
-memory = MemorySaver()
-react_graph_memory = builder.compile(checkpointer=memory)
-config = {"configurable": {"thread_id": "1"}}
 
-messages= [
+
+messages = [
     SystemMessage(content="You are a helpful assistant! Your name is Bob."),
-    HumanMessage(content="What is your name?"),
 ]
-messages_no_memories = graph.invoke({"messages": messages})
-messages_no_memories = graph.invoke(
-    {"messages": [HumanMessage(content="What is your name again?")]}
-)
 
-messages_w_memories = react_graph_memory.invoke({"messages": messages}, config)
-messages_w_memories = react_graph_memory.invoke(
-    {"messages": [HumanMessage(content="What is your name again?")]},
-    config
-)
+if __name__ == "__main__":
+    print("Chatbot ready...\n")
+    while True:
+        user_input= input("You: ")
+        if user_input.lower() in ["exit", "quit"]:
+            print("Exiting chat...")
+            break
+        
+        messages.append(HumanMessage(content=user_input))
+
+        response = graph.invoke({"messages": messages})
+        messages = response['messages'] 
+        for msg in response['messages']:
+            # print(f"{msg.type}: {msg.content}")
+             msg.pretty_print()  
+        print("\n================New Chat Turn===================\n")
 
 
-print("\n\n===== WITHOUT MEMORIES =====")
-for i in messages_no_memories["messages"]:
-    i.pretty_print()                        
-print("\n\n===== WITH MEMORIES =====")
-for i in messages_w_memories["messages"]:
-    i.pretty_print()    
 
-# print(result["messages"][-1].content)
