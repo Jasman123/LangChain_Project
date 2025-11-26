@@ -6,7 +6,9 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Remo
 from typing import Literal
 from IPython.display import Image, display
 from langgraph.checkpoint.memory import MemorySaver
-
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_chroma import Chroma
+from langchain_core.prompts import PromptTemplate
 
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
@@ -18,47 +20,93 @@ chat = ChatGoogleGenerativeAI(
     max_retries=2,
 )
 
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="text-embedding-004",
+    timeout=30,
+    max_retries=2,
+)
+
+def load_vector_store(embeddings):
+    vector_store = Chroma(
+        embedding_function=embeddings,
+        collection_name="pdf_docs",
+        persist_directory="chroma_db"
+    )
+    return vector_store
 
 class State(MessagesState):
     pass
+    documents : list[str]
+
+def retrrieve_documents(state:State) -> State:
+    vector_store = load_vector_store(embeddings)
+    question = state["messages"][-1].content
+    docs = vector_store.similarity_search(question, k=3)
+    document_pages = [doc.page_content for doc in docs]
+    return {"documents": document_pages}
 
 
-def call_model(state: State):
-    response = chat.invoke(state["messages"])
-    return {"messages": state["messages"] + [response]}
+def chat_model(state: State) -> State:
+    documents = "\n\n".join(state["documents"])
+    question = state["messages"][-1].content
+    prompt_template = PromptTemplate(
+        input_variables=["documents", "question"],
+        template="""
+        Use the following documents to answer the question.
+        
+        Documents:
+        {documents}
+        
+        Question:
+        {question}
+        
+        Provide a detailed and accurate answer based on the documents.
+        If the answer is not found in the documents, respond with "I don't know."
+        """
+    )
+    prompt = prompt_template.format(documents=documents, question=question)
+    state['messages'].append(HumanMessage(content=prompt))
+    print(state['messages'])
+    response = chat.invoke(state['messages'])
+    return {"messages": state['messages'] + [response]}
+
 
 builder = StateGraph(State)
-builder.add_node("model", call_model)
+builder.add_node("chat_model", chat_model)
+builder.add_node("retrieve_documents", retrrieve_documents)
 
-builder.add_edge(START, "model")
-builder.add_edge("model", END)
+builder.add_edge(START, "retrieve_documents")
+builder.add_edge("retrieve_documents", "chat_model")
+builder.add_edge("chat_model", END)
 
 graph = builder.compile()
 memory = MemorySaver()
 react_graph_memory = builder.compile(checkpointer=memory)
 config = {"configurable": {"thread_id": "1"}}
 
-messages= [
+
+messages = [
     SystemMessage(content="You are a helpful assistant! Your name is Bob."),
-    HumanMessage(content="What is your name?"),
 ]
-messages_no_memories = graph.invoke({"messages": messages})
-messages_no_memories = graph.invoke(
-    {"messages": [HumanMessage(content="What is your name again?")]}
-)
+vector_store = load_vector_store(embeddings)
+print(f"Vector store loaded.{vector_store._collection.count()} documents in the database.")
 
-messages_w_memories = react_graph_memory.invoke({"messages": messages}, config)
-messages_w_memories = react_graph_memory.invoke(
-    {"messages": [HumanMessage(content="What is your name again?")]},
-    config
-)
+if __name__ == "__main__":
+    print("Chatbot ready...\n")
+    while True:
+        user_input= input("You: ")
+        if user_input.lower() in ["exit", "quit"]:
+            print("Exiting chat...")
+            break
+        
+        messages.append(HumanMessage(content=user_input))
+
+        response = graph.invoke({"messages": messages}, config=config)
+        messages = response['messages'] 
+        for msg in response['messages']:
+            # print(f"{msg.type}: {msg.content}")
+             msg.pretty_print()  
+        print("\n================New Chat Turn===================\n")
 
 
-print("\n\n===== WITHOUT MEMORIES =====")
-for i in messages_no_memories["messages"]:
-    i.pretty_print()                        
-print("\n\n===== WITH MEMORIES =====")
-for i in messages_w_memories["messages"]:
-    i.pretty_print()    
 
-# print(result["messages"][-1].content)
