@@ -38,10 +38,14 @@ class State(MessagesState):
     pass
     documents : list[str]
 
-def retrrieve_documents(state:State) -> State:
+def retrieve_documents(state:State) -> State:
     vector_store = load_vector_store(embeddings)
     question = state["messages"][-1].content
-    docs = vector_store.similarity_search(question, k=3)
+    retriever = vector_store.as_retriever(
+    search_type="mmr",
+    search_kwargs={"k":3, 'lambda_mult': 0.7}
+    )
+    docs = retriever.invoke(question)
     document_pages = [doc.page_content for doc in docs]
     return {"documents": document_pages}
 
@@ -73,7 +77,7 @@ def chat_model(state: State) -> State:
 
 builder = StateGraph(State)
 builder.add_node("chat_model", chat_model)
-builder.add_node("retrieve_documents", retrrieve_documents)
+builder.add_node("retrieve_documents", retrieve_documents)
 
 builder.add_edge(START, "retrieve_documents")
 builder.add_edge("retrieve_documents", "chat_model")
@@ -90,6 +94,14 @@ messages = [
 ]
 vector_store = load_vector_store(embeddings)
 print(f"Vector store loaded.{vector_store._collection.count()} documents in the database.")
+
+png = react_graph_memory.get_graph().draw_mermaid_png()
+display(Image(png))
+output_path = "graph.png"
+with open(output_path, "wb") as f:
+    f.write(png)
+
+print(f"Graph saved to: {output_path}")
 
 if __name__ == "__main__":
     print("Chatbot ready...\n")
