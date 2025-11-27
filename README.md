@@ -194,7 +194,8 @@ while True:
 ### 1. Clone Repository
 
 ``` bash
-git clone https://github.com/<your-username>/<your-repo>.git
+git clone https://github.com/Jasman123/LangChain_Project
+
 cd <your-repo>
 ```
 
