@@ -1,115 +1,183 @@
-# Project README
-🌟 LangGraph + Gemini Chatbot Simulator (Streamlit Edition)
-<p align="center"> <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python" /> <img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit" /> <img src="https://img.shields.io/badge/Google%20Gemini-2.5%20Flash-4285F4?logo=google" /> <img src="https://img.shields.io/badge/LangChain-Framework-orange?logo=chainlink" /> <img src="https://img.shields.io/badge/LangGraph-Orchestration-green" /> </p> <p align="center"> <b>Multi-turn conversational AI powered by LangGraph + Gemini, delivered in a clean Streamlit web app.</b> </p>
+🌟 LangGraph + Gemini RAG Chatbot + Streamlit
+<p align="center"> <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python" /> <img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit" /> <img src="https://img.shields.io/badge/Google%20Gemini-2.5%20Flash-4285F4?logo=google" /> <img src="https://img.shields.io/badge/LangChain-Framework-orange?logo=chainlink" /> <img src="https://img.shields.io/badge/LangGraph-Orchestration-green" /> </p> <p align="center"><b>Retrieval-Augmented Chatbot powered by LangGraph, Google Gemini, and Chroma — deployed with a clean Streamlit UI.</b></p>
 🚀 Overview
 
-## Overview
+This project implements a RAG (Retrieval-Augmented Generation) chatbot using:
 
-This project implements a retrieval-augmented chatbot using LangChain, LangGraph, Google Generative AI, and Chroma for vector storage. It allows users to interact with a chatbot that retrieves relevant information from stored documents and produces context-aware responses.
+Google Gemini 2.5 Flash for fast, high-quality reasoning
 
-## Features
+LangChain for modular components
 
-* **Google Gemini 2.5 Flash** model for fast and accurate responses.
-* **RAG (Retrieval-Augmented Generation)** enabled using Chroma vector store.
-* **LangGraph state management** for structured conversational flows.
-* **Embeddings using text-embedding-004** for efficient document retrieval.
-* **Memory-backed graph execution** via `MemorySaver`.
+LangGraph for structured conversational workflows
 
-## File Structure
+ChromaDB for vector search
 
-```
+Streamlit for an interactive web UI
+
+Users can ask questions, and the chatbot retrieves the most relevant documents from the vector store, adds them to the prompt, and generates a context-aware response.
+
+The assistant identifies itself as Bob.
+
+✨ Features
+🔍 Retrieval Augmented Generation (RAG)
+
+Uses GoogleGenerativeAIEmbeddings (text-embedding-004).
+
+Chroma Vector DB with persistent storage.
+
+MMR-based retriever for diverse top-k results.
+
+🧠 LangGraph Conversation Flow
+
+Two main nodes:
+
+retrieve_documents – fetches top-k relevant chunks
+
+chat_model – augments prompt + queries Gemini
+
+💬 Streamlit Chat UI
+
+Smooth chat interface with message history
+
+Session-based memory
+
+Auto-renders responses
+
+📁 File Structure
 project/
 │-- main.py
 │-- chroma_db/
 │-- .env
 │-- requirements.txt
 │-- README.md
-```
 
-## Requirements
+🔧 Requirements
 
 Install dependencies:
 
-```bash
 pip install -r requirements.txt
-```
 
-Required environment variables:
 
-```
+Environment variables:
+
 GOOGLE_API_KEY=your_api_key_here
-```
 
-## How It Works
+🧩 Core Components
+1. Google Gemini Chat Model
+chat = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+)
 
-1. Loads Google Generative AI model for chat.
-2. Loads embeddings and initializes a Chroma vector store.
-3. Defines a LangGraph workflow with two main nodes:
+2. Embeddings
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="text-embedding-004",
+    timeout=30,
+    max_retries=2,
+)
 
-   * **retrieve_documents** – retrieves top-k similar documents.
-   * **chat_model** – constructs a prompt using retrieved documents and queries the model.
-4. Runs an interactive loop allowing the user to chat with the RAG-enabled assistant.
-
-## Running the Application
-
-Start the chatbot with:
-
-```bash
-python main.py
-```
-
-Then type any question. To exit:
-
-```
-exit
-```
-
-## Key Code Snippets
-
-### Loading the Vector Store
-
-```python
+3. Vector Store Loader
 def load_vector_store(embeddings):
     return Chroma(
         embedding_function=embeddings,
         collection_name="pdf_docs",
         persist_directory="chroma_db"
     )
-```
 
-### Retrieval Node
-
-```python
-def retrrieve_documents(state):
+4. Retrieval Node (MMR Search)
+def retrieve_documents(state: State) -> State:
     vector_store = load_vector_store(embeddings)
     question = state["messages"][-1].content
-    docs = vector_store.similarity_search(question, k=3)
-    return {"documents": [doc.page_content for doc in docs]}
-```
+    retriever = vector_store.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": 3, "lambda_mult": 0.7}
+    )
+    docs = retriever.invoke(question)
+    document_pages = [doc.page_content for doc in docs]
+    return {"documents": document_pages}
 
-### Chat Node
-
-```python
-def chat_model(state):
+5. Chat Node (Prompt + Generation)
+def chat_model(state: State) -> State:
     documents = "\n\n".join(state["documents"])
     question = state["messages"][-1].content
-    prompt = PromptTemplate(...)
+    prompt_template = PromptTemplate(
+        input_variables=["documents", "question"],
+        template="""
+        Use the following documents to answer the question.
+
+        Documents:
+        {documents}
+
+        Question:
+        {question}
+
+        Provide a detailed and accurate answer based on the documents.
+        If the answer is not found in the documents, respond with "I don't know."
+        """
+    )
+    prompt = prompt_template.format(documents=documents, question=question)
+    state['messages'].append(HumanMessage(content=prompt))
     response = chat.invoke(state['messages'])
     return {"messages": state['messages'] + [response]}
-```
 
-## Notes
+6. LangGraph Workflow
+builder = StateGraph(State)
+builder.add_node("retrieve_documents", retrieve_documents)
+builder.add_node("chat_model", chat_model)
 
-* The assistant identifies itself as **Bob** per the system message.
-* If no answer is found in the documents, the model responds with *"I don't know."*
+builder.add_edge(START, "retrieve_documents")
+builder.add_edge("retrieve_documents", "chat_model")
+builder.add_edge("chat_model", END)
 
-## Future Improvements
+graph = builder.compile()
 
-* Add UI (Streamlit/Gradio).
-* Include PDF ingestion pipeline.
-* Improve system prompt engineering.
-* Add conversation history persistence.
+7. Streamlit Application
 
-## License
+The UI includes:
 
-MIT License.
+Chat input
+
+Persistent session state
+
+Filter to avoid showing internal prompt injections
+
+st.set_page_config(page_title="AI RAG Chatbot", page_icon="🤖", layout="wide")
+st.title("🤖 RAG-Powered AI Chatbot")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = [SystemMessage(content="You are a helpful assistant! Your name is Bob.")]
+
+
+Renders chat history:
+
+for msg in st.session_state.messages:
+    if isinstance(msg, HumanMessage) and not msg.content.startswith("Use the following documents"):
+        st.chat_message("user").write(msg.content)
+    elif msg.type == "ai":
+        st.chat_message("assistant").write(msg.content)
+
+▶️ Running the Application
+
+Start the Streamlit app with:
+
+streamlit run main.py
+
+
+Then type into the chat input.
+
+To exit: close the Streamlit UI.
+
+🔮 Future Improvements
+
+Add file ingestion (PDFs, text, web URLs)
+
+Enhanced streaming support
+
+User-configurable retrieval settings
+
+Model selection dropdown
+
+Multi-session conversation storage
