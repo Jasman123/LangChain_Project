@@ -100,7 +100,7 @@ if __name__ == "__main__":
         
     ]
 
-    user_input = st.chat_input("Ask a question about the documents...")
+    user_input = st.chat_input("Ask a question ...")
 
     if user_input:
         st.session_state.messages.append(HumanMessage(content=user_input))
