@@ -1,4 +1,7 @@
 # Project README
+🌟 LangGraph + Gemini Chatbot Simulator (Streamlit Edition)
+<p align="center"> <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python" /> <img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit" /> <img src="https://img.shields.io/badge/Google%20Gemini-2.5%20Flash-4285F4?logo=google" /> <img src="https://img.shields.io/badge/LangChain-Framework-orange?logo=chainlink" /> <img src="https://img.shields.io/badge/LangGraph-Orchestration-green" /> </p> <p align="center"> <b>Multi-turn conversational AI powered by LangGraph + Gemini, delivered in a clean Streamlit web app.</b> </p>
+🚀 Overview
 
 ## Overview
 
