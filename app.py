@@ -70,7 +70,7 @@ def chat_model(state: State) -> State:
     )
     prompt = prompt_template.format(documents=documents, question=question)
     state['messages'].append(HumanMessage(content=prompt))
-    print(state['messages'])
+    # print(state['messages'])
     response = chat.invoke(state['messages'])
     return {"messages": state['messages'] + [response]}
 
@@ -106,7 +106,7 @@ print(f"Graph saved to: {output_path}")
 if __name__ == "__main__":
     print("Chatbot ready...\n")
     while True:
-        user_input= input("You: ")
+        user_input= input("You : ")
         if user_input.lower() in ["exit", "quit"]:
             print("Exiting chat...")
             break
@@ -114,10 +114,12 @@ if __name__ == "__main__":
         messages.append(HumanMessage(content=user_input))
 
         response = graph.invoke({"messages": messages}, config=config)
+        print(f"AI : {response['messages'][-1].content}")
         messages = response['messages'] 
-        for msg in response['messages']:
+        # Uncomment below to see full message history
+        # for msg in response['messages']:
             # print(f"{msg.type}: {msg.content}")
-             msg.pretty_print()  
+            #  msg.pretty_print()  
         print("\n================New Chat Turn===================\n")
 
 
