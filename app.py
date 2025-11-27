@@ -9,6 +9,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
+import streamlit as st
 
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
@@ -86,41 +87,42 @@ builder.add_edge("chat_model", END)
 graph = builder.compile()
 memory = MemorySaver()
 react_graph_memory = builder.compile(checkpointer=memory)
-config = {"configurable": {"thread_id": "1"}}
 
-
-messages = [
-    SystemMessage(content="You are a helpful assistant! Your name is Bob."),
-]
-vector_store = load_vector_store(embeddings)
-print(f"Vector store loaded.{vector_store._collection.count()} documents in the database.")
-
-png = react_graph_memory.get_graph().draw_mermaid_png()
-display(Image(png))
-output_path = "graph.png"
-with open(output_path, "wb") as f:
-    f.write(png)
-
-print(f"Graph saved to: {output_path}")
 
 if __name__ == "__main__":
-    print("Chatbot ready...\n")
-    while True:
-        user_input= input("You : ")
-        if user_input.lower() in ["exit", "quit"]:
-            print("Exiting chat...")
-            break
-        
-        messages.append(HumanMessage(content=user_input))
 
-        response = graph.invoke({"messages": messages}, config=config)
-        print(f"AI : {response['messages'][-1].content}")
-        messages = response['messages'] 
-        # Uncomment below to see full message history
-        # for msg in response['messages']:
-            # print(f"{msg.type}: {msg.content}")
-            #  msg.pretty_print()  
-        print("\n================New Chat Turn===================\n")
+    st.set_page_config(page_title="AI RAG Chatbot", page_icon="🤖", layout="wide")
+    st.title("🤖 RAG-Powered AI Chatbot")
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+        SystemMessage(content="You are a helpful assistant! Your name is Bob.")
+        
+    ]
+
+    user_input = st.chat_input("Ask a question about the documents...")
+
+    if user_input:
+        st.session_state.messages.append(HumanMessage(content=user_input))
+
+    # Run the graph
+        output = graph.invoke(
+        {"messages": st.session_state.messages},
+        config={"configurable": {"thread_id": "session_1"}}
+        )
+
+        ai_response = output["messages"][-1].content
+        st.session_state.messages = output["messages"]
+
+        # print(st.session_state.messages)
+
+    # Display chat history
+    for msg in st.session_state.messages:
+        if isinstance(msg, HumanMessage) and not msg.content.strip().startswith("Use the following documents"):
+            st.chat_message("user").write(msg.content)
+        elif msg.type == "ai":
+            st.chat_message("assistant").write(msg.content)
+
 
 
 
