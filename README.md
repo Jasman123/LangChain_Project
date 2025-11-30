@@ -197,18 +197,6 @@ while True:
 
 # 📥 Installation
 
-## 0. Build ChromaDB (Run This First)
-
-Before running the chatbot or Streamlit app, you **must generate the ChromaDB vector store**.
-
-Run the embedding script:
-
-```bash
-python load_vector.py
-```
-
-This processes your PDF files and stores embeddings inside the `chroma_db/` folder.
-
 ## 1. Clone
 
 ```bash
@@ -239,11 +227,22 @@ GOOGLE_API_KEY=your_api_key_here
 ```
 
 ---
+## 0. Build ChromaDB (Run This First)
+
+Before running the chatbot or Streamlit app, you **must generate the ChromaDB vector store**.
+
+Run the embedding script:
+
+```bash
+python load_vector.py
+```
+
+This processes your PDF files and stores embeddings inside the `chroma_db/` folder.
 
 # ▶️ Run CLI Chatbot
 
 ```bash
-python main.py
+python app.py
 ```
 
 ---
