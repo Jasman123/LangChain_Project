@@ -323,6 +323,9 @@ The assistant follows strict RAG rules:
 
 ---
 
+<img width="1723" height="639" alt="image" src="https://github.com/user-attachments/assets/4c982060-2a3f-474e-a707-5adc58809e43" />
+
+
 # 🚀 Roadmap
 
 * Add streaming in CLI
