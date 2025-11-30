@@ -227,7 +227,7 @@ GOOGLE_API_KEY=your_api_key_here
 ```
 
 ---
-## 0. Build ChromaDB (Run This First)
+## 5. Build ChromaDB
 
 Before running the chatbot or Streamlit app, you **must generate the ChromaDB vector store**.
 
