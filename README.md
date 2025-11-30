@@ -1,5 +1,6 @@
-# 🌟 LangGraph + Gemini RAG Chatbot (Streamlit Edition)  
-### _AI-Powered Document-Aware Conversational Assistant_
+# 🌟 LangGraph + Gemini RAG Chatbot (Streamlit Edition)
+
+### *AI-Powered Document-Aware Conversational Assistant*
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python" />
@@ -16,13 +17,14 @@
 
 This project implements a modern **Retrieval-Augmented Generation (RAG) chatbot** built with:
 
-- **Google Gemini 2.5 Flash**  
-- **LangChain** for embeddings and tools  
-- **LangGraph** for orchestrated conversational flow  
-- **ChromaDB** for persistent vector search  
-- **Streamlit** for a polished chat UI  
+* **Google Gemini 2.5 Flash**
+* **LangChain** for embeddings and toolchains
+* **LangGraph** for orchestrated conversational flows
+* **ChromaDB** for persistent vector search
+* **Streamlit** for an interactive chat UI
 
-The assistant retrieves relevant documents, injects them into the prompt, and generates accurate, contextual responses.  
+The chatbot retrieves relevant document chunks, injects them into prompts, and produces **grounded, contextual, and accurate responses**.
+
 The assistant identifies itself as **Bob**.
 
 ---
@@ -30,64 +32,72 @@ The assistant identifies itself as **Bob**.
 # ⚙️ Features
 
 ### 🔍 Smart Document Retrieval
-Uses **ChromaDB** + **Gemini Embeddings** to find the most relevant content.
 
-### 🧠 Context-Aware Responses  
-Documents are inserted directly into prompt context for deeply informed answers.
+Uses **ChromaDB** + **Gemini Embeddings** to find the most relevant PDF chunks.
 
-### 🔄 Conversation Orchestration (LangGraph)  
-A multi-node workflow:
-- Query → Embed → Search → Generate → Stream Result
+### 🧠 Context-Aware Responses
 
-### ⚡ Fast Local Vector Search  
-Chroma provides persistent, lightweight, high-speed embedding lookup.
+The retrieved chunk text is inserted directly into the prompt.
 
-### 🎨 Streamlit UI  
-Includes:
-- Full chat interface  
-- File upload panel  
-- Conversation memory  
-- Real-time streaming responses
+### 🔄 LangGraph Orchestrated Workflow
+
+Encapsulated node-based RAG pipeline:
+
+* Query → Embed → Vector Search → Prompt → Gemini Response → Stream
+
+### ⚡ Persistent Local Vector Store
+
+Chroma provides high-speed similarity search with local file persistence.
+
+### 🎨 Clean Streamlit UI
+
+Features include:
+
+* Real-time chat streaming
+* File upload
+* Conversation memory
+* Interactive display
+
+---
 
 # 🧠 How It Works
 
-Your chatbot processes queries through this sequence:
+The chatbot follows this pipeline:
 
-1.  User submits a question\
-2.  `retrieve_documents` performs vector search using **ChromaDB**\
-3.  Top 3 relevant chunks are returned\
-4.  A prompt is constructed and sent to **Gemini**\
-5.  Gemini responds strictly based on context\
-6.  LangGraph returns updated conversation state
+1. User submits a question.
+2. `retrieve_documents` performs vector search using ChromaDB.
+3. Top 3 most relevant documents are returned.
+4. The documents are injected into a prompt template.
+5. Gemini generates a grounded answer.
+6. LangGraph updates the conversation state.
 
-This ensures grounded, document‑based answers.
+This ensures **evidence-based answers with minimal hallucinations**.
 
-------------------------------------------------------------------------
+---
 
-## 🧩 Code Breakdown
+# 🧩 Code Breakdown
 
-### 1. Model Initialization
+## 1. Model Initialization
 
-``` python
-chat = ChatGoogleGenerativeAI(
+```python\chat = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
     temperature=0,
 )
 ```
 
-### Embeddings
+## Embeddings
 
-``` python
+```python
 embeddings = GoogleGenerativeAIEmbeddings(
     model="text-embedding-004"
 )
 ```
 
-------------------------------------------------------------------------
+---
 
-### 2. Vector Store Loader
+## 2. Vector Store Loader
 
-``` python
+```python
 def load_vector_store(embeddings):
     return Chroma(
         embedding_function=embeddings,
@@ -96,26 +106,26 @@ def load_vector_store(embeddings):
     )
 ```
 
-Stores vectorized PDF chunks.
+---
 
-------------------------------------------------------------------------
+## 3. LangGraph State
 
-### 3. LangGraph State
-
-``` python
+```python
 class State(MessagesState):
     pass
     documents: list[str]
 ```
 
-State contains: - `messages`: conversation history\
-- `documents`: retrieved chunks
+Contains:
 
-------------------------------------------------------------------------
+* `messages`
+* `documents`
 
-### 4. Document Retrieval Node
+---
 
-``` python
+## 4. Document Retrieval Node
+
+```python
 def retrrieve_documents(state: State) -> State:
     vector_store = load_vector_store(embeddings)
     question = state["messages"][-1].content
@@ -124,13 +134,11 @@ def retrrieve_documents(state: State) -> State:
     return {"documents": document_pages}
 ```
 
-------------------------------------------------------------------------
+---
 
-### 5. Chat Model Node
+## 5. Chat Model Node
 
-Prompt template:
-
-``` python
+```python
 prompt_template = PromptTemplate(
     template="""
         Use the following documents to answer the question.
@@ -142,18 +150,16 @@ prompt_template = PromptTemplate(
         {question}
 
         Provide a detailed and accurate answer based on the documents.
-        If the answer is not found in the documents, respond with "I don't know."
+        If the answer is not found in the documents, respond with \"I don't know.\"
     """
 )
 ```
 
-Gemini produces a grounded RAG answer.
+---
 
-------------------------------------------------------------------------
+## 6. Graph Construction
 
-### 6. Graph Construction
-
-``` python
+```python
 builder = StateGraph(State)
 builder.add_node("chat_model", chat_model)
 builder.add_node("retrieve_documents", retrrieve_documents)
@@ -165,146 +171,163 @@ builder.add_edge("chat_model", END)
 
 Workflow:
 
-    START → retrieve_documents → chat_model → END
+```
+START → retrieve_documents → chat_model → END
+```
 
-------------------------------------------------------------------------
+---
 
-### 7. Memory Mode (Optional)
+## 7. Memory Mode (Optional)
 
-``` python
+```python
 memory = MemorySaver()
 react_graph_memory = builder.compile(checkpointer=memory)
 ```
 
-Enables persistent chat threads.
+---
 
-------------------------------------------------------------------------
+## 8. CLI Chat Loop
 
-### 8. CLI Chat Loop
-
-``` python
+```python
 while True:
     user_input = input("You: ")
 ```
 
-------------------------------------------------------------------------
+---
 
-## 📥 Installation
+# 📥 Installation
 
-### 1. Clone Repository
+## 0. Build ChromaDB (Run This First)
 
-``` bash
+Before running the chatbot or Streamlit app, you **must generate the ChromaDB vector store**.
+
+Run the embedding script:
+
+```bash
+python load_vector.py
+```
+
+This processes your PDF files and stores embeddings inside the `chroma_db/` folder.
+
+## 1. Clone
+
+```bash
 git clone https://github.com/Jasman123/LangChain_Project
-
-cd <your-repo>
+cd LangChain_Project
 ```
 
-### 2. Create venv
+## 2. Create Virtual Environment
 
-``` bash
+```bash
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Linux / macOS
+venv\Scripts\activate     # Windows
 ```
 
-### 3. Install Dependencies
+## 3. Install Requirements
 
-``` bash
+```bash
 pip install -r requirements.txt
 ```
 
-### 4. Setup API Key
+## 4. Configure Environment
 
-``` bash
+Create `.env` file:
+
+```env
 GOOGLE_API_KEY=your_api_key_here
 ```
 
-------------------------------------------------------------------------
+---
 
-## ▶️ Run CLI Chatbot
+# ▶️ Run CLI Chatbot
 
-``` bash
+```bash
 python main.py
 ```
 
-------------------------------------------------------------------------
+---
 
-## 🌐 Run Streamlit App
+# 🌐 Run Streamlit App
 
-``` bash
+```bash
 streamlit run app.py
 ```
 
-Features: - Chat interface\
-- PDF upload\
-- RAG responses\
-- Conversation memory
+Features:
 
-------------------------------------------------------------------------
+* Chat interface
+* PDF document upload
+* RAG search
+* Memory
 
-## 🧬 LangGraph Architecture
+---
 
-    flowchart TD
-        A[START] --> B[Retrieve Documents]
-        B --> C[Chat Model]
-        C --> D[END]
+# 🧬 LangGraph Architecture
 
-------------------------------------------------------------------------
+```
+flowchart TD
+    A[START] --> B[Retrieve Documents]
+    B --> C[Chat Model]
+    C --> D[END]
+```
 
-## 🗂 Directory Structure
+---
 
-    📦 rag-chatbot
-    ├── app.py
-    ├── main.py
-    ├── chroma_db/
-    ├── data/
-    ├── README.md
-    ├── requirements.txt
-    └── .env
+# 🗂 Directory Structure
 
-------------------------------------------------------------------------
+```
+📦 LangChain_Project
+├── app.py
+├── main.py
+├── chroma_db/
+├── data/
+├── README.md
+├── requirements.txt
+└── .env
+```
 
-## 📄 Prompt Strategy
+---
 
-The assistant follows strict evidence‑based reasoning:
+# 📄 Prompt Strategy
 
-**If the answer is not found in the documents, it responds:\
-"I don't know."**
+The assistant follows strict RAG rules:
 
-------------------------------------------------------------------------
+**If the answer is not found in the documents, it responds:**
 
-## 🧩 Example Chat
+> "I don't know."
 
-**User:**\
-*"What does the document say about compliance testing?"*
+---
 
-**Assistant:**\
-"Based on the retrieved documents, the compliance testing steps
-include..."
+# 🧩 Example Chat
 
-------------------------------------------------------------------------
+**User:**
 
-## 🛠 Tech Stack
+> What does the document say about compliance testing?
 
-  Layer           Technology
-  --------------- --------------------
-  LLM             Gemini 2.5 Flash
-  Embeddings      text-embedding-004
-  Vector Store    ChromaDB
-  Orchestration   LangGraph
-  Prompting       LangChain
-  UI              Streamlit
+**Assistant:**
 
-------------------------------------------------------------------------
+> Based on the retrieved documents, the compliance testing steps include...
 
-## 🚀 Roadmap
+---
 
--   Add streaming in CLI\
--   Chunk‑level citations\
--   Add PDF ingestion in UI\
--   Evaluation pipeline (Ragas)\
--   Deploy to Cloud Run / Spaces
+# 🛠 Tech Stack
 
+| Layer         | Technology         |
+| ------------- | ------------------ |
+| LLM           | Gemini 2.5 Flash   |
+| Embeddings    | text-embedding-004 |
+| Vector Store  | ChromaDB           |
+| Orchestration | LangGraph          |
+| Prompting     | LangChain          |
+| UI            | Streamlit          |
 
+---
 
+# 🚀 Roadmap
 
-
+* Add streaming in CLI
+* Add citations
+* Add PDF ingestion UI
+* Add Ragas evaluation
+* Deploy (Cloud Run / HuggingFace)
