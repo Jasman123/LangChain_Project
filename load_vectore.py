@@ -64,7 +64,7 @@ def load_vector_store(embeddings):
     )
     return vector_store
 
-document = load_pdf(r"C:\Users\OFFICE-COB\Documents\COB Engineer\LangChain_AI_Project\langchain_project\data_pdf.pdf")
+document = load_pdf(r".\data_pdf.pdf")
 vector_store = build_vector_store(document)
 
 vector_store = load_vector_store(embeddings)
@@ -81,6 +81,7 @@ for doc in retrieved_docs:
     print("---- Document ----")
     print("page number:", doc.metadata.get('page'))
     print(doc.page_content)
+
 
 
 
