@@ -270,6 +270,8 @@ flowchart TD
     B --> C[Chat Model]
     C --> D[END]
 ```
+<img width="187" height="333" alt="graph" src="https://github.com/user-attachments/assets/0d06a0a3-286e-450f-80bb-e2e0b4660429" />
+
 
 ---
 
