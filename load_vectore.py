@@ -66,8 +66,6 @@ def load_vector_store(embeddings):
 
 document = load_pdf(r".\data_pdf.pdf")
 vector_store = build_vector_store(document)
-
-vector_store = load_vector_store(embeddings)
 print("Vector store loaded.")
 print("len of collection:", vector_store._collection.count())
 resutl = vector_store.as_retriever(
@@ -81,6 +79,7 @@ for doc in retrieved_docs:
     print("---- Document ----")
     print("page number:", doc.metadata.get('page'))
     print(doc.page_content)
+
 
 
 
