@@ -79,7 +79,8 @@ This ensures **evidence-based answers with minimal hallucinations**.
 
 ## 1. Model Initialization
 
-```python\chat = ChatGoogleGenerativeAI(
+```python\
+chat = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
     temperature=0,
 )
